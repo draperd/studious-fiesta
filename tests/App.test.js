@@ -1,20 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import App from "../src/App";
 
 import { Provider } from "react-redux";
 import { createStore } from "redux";
 
-import combinedReducers from "./reducers/combined";
+import combinedReducers from "../src/reducers/combined";
 
-import App from "./App";
-import "./index.css";
-
-// Create a store using all of the combined reducers...
 const store = createStore(combinedReducers);
 
-ReactDOM.render(
+it("renders without crashing", () => {
+  const div = document.createElement("div");
+  ReactDOM.render(
     <Provider store={store}>
         <App/>
-    </Provider>,
-    document.getElementById("root")
-);
+    </Provider>, 
+    div);
+});
