@@ -10,7 +10,11 @@ class App extends Component {
         return (
             <Form>
                 <FieldWrapper>
-                    <TextBox fieldId="FIELD1"></TextBox>
+                    <TextBox fieldId="FIELD1"
+                             visibleWhen={ [
+                                 { fieldId: "FIELD2", is: [ "show" ] }
+                             ] }></TextBox>
+                    <TextBox fieldId="FIELD2"></TextBox>
                 </FieldWrapper>
             </Form>
 

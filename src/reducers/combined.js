@@ -1,10 +1,10 @@
 import { combineReducers } from "redux"
-import formFields from "./formReducers";
+import forms from "./formReducers";
 // import todos from "./todos"
 // import visibilityFilter from "./visibilityFilter"
 
 const combinedReducers = combineReducers({
-    formFields
+    forms
 //   todos,
 //   visibilityFilter
 })

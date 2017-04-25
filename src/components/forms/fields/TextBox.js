@@ -4,40 +4,60 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
+import { get } from "lodash";
 
-import { updateFieldValue } from "../../../actions/formActions";
+import { updateFieldValue, registerField } from "../../../actions/formActions";
 
-const TextBox = ({ onChange, fieldId, formId }) => (
-    <input type="text"
-           onChange={(evt) => onChange({ evt, formId, fieldId })}></input>
-)
+class TextBox extends React.Component {
+
+    /**
+     * Registers the field.
+     * 
+     * @instance
+     */
+    componentDidMount() {
+        this.props.registerField(this.props);
+    }
+
+    /**
+     * @instance
+     * @return {JSX}
+     */
+    render() {
+        return (
+            <input type="text"
+                   style={ { display: (this.props.visible ? "block" : "none") } }
+                   onChange={(evt) => this.props.onChange({ evt })}></input>
+        );
+    }
+
+}
 
 TextBox.propTypes = {
     fieldId: PropTypes.string.isRequired,
-    onChange: PropTypes.func.isRequired
+    onChange: PropTypes.func.isRequired,
+    registerField: PropTypes.func.isRequired,
+    visible: PropTypes.bool.isRequired
 }
 
-// const getVisibleTodos = (todos, filter) => {
-//   switch (filter) {
-//     case "SHOW_ALL":
-//       return todos
-//     case "SHOW_COMPLETED":
-//       return todos.filter(t => t.completed)
-//     case "SHOW_ACTIVE":
-//       return todos.filter(t => !t.completed)
-//   }
-// }
+const getAttribute = ({ state, ownProps, attribute }) => {
+    const location = `forms.${ownProps.formId}.fieldsById.${ownProps.fieldId}.${attribute}`;
+    return get(state, location, true);
+}
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state, ownProps) => {
     return {
-        // todos: getVisibleTodos(state.todos, state.visibilityFilter)
+        visible: getAttribute({ state, ownProps, attribute: "visible" })
     }
 }
 
 const mapDispatchToProps = (dispatch, ownProps) => {
     return {
-        onChange: ({ evt, formId, fieldId }) => {
-          dispatch(updateFieldValue({ evt, formId: ownProps.formId, fieldId }))
+        registerField: () => {
+            dispatch(registerField({ formId: ownProps.formId, field: ownProps }));
+        },
+        onChange: ({ evt }) => {
+            dispatch(updateFieldValue({ evt, formId: ownProps.formId, fieldId: ownProps.fieldId }))
         }
     }
 }

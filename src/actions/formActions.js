@@ -36,10 +36,10 @@ export const registerForm = ({ formId }) => ({
  * @param {object} props
  * @param {string} props.formId The id of the form
  */
-export const registerField = ({ formId, fieldId }) => ({
+export const registerField = ({ formId, field }) => ({
     type: actionNames.REGISTER_FIELD,
     formId,
-    fieldId
+    field
 })
 
 /**
