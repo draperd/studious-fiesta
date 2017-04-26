@@ -26,7 +26,7 @@ class TextBox extends React.Component {
     render() {
         return (
             <input type="text"
-                   style={ { display: (this.props.visible ? "block" : "none") } }
+                   style={ { display: (this.props.isVisible ? "block" : "none") } }
                    onChange={(evt) => this.props.onChange({ evt })}></input>
         );
     }
@@ -37,7 +37,7 @@ TextBox.propTypes = {
     fieldId: PropTypes.string.isRequired,
     onChange: PropTypes.func.isRequired,
     registerField: PropTypes.func.isRequired,
-    visible: PropTypes.bool.isRequired
+    isVisible: PropTypes.bool.isRequired
 }
 
 const getAttribute = ({ state, ownProps, attribute }) => {
@@ -47,7 +47,7 @@ const getAttribute = ({ state, ownProps, attribute }) => {
 
 const mapStateToProps = (state, ownProps) => {
     return {
-        visible: getAttribute({ state, ownProps, attribute: "visible" })
+        isVisible: getAttribute({ state, ownProps, attribute: "isVisible" })
     }
 }
 

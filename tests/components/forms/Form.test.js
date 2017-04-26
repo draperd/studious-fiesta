@@ -12,7 +12,17 @@ import combinedReducers from "../../../src/reducers/combined";
 
 const store = createStore(combinedReducers);
 
+let mockWarn;
+beforeEach(() => {
+    mockWarn = console.warn = jest.fn(() => {});
+});
+
+afterEach(() => {
+    mockWarn.mockClear();
+});
+
 test("form should pass id to field", () => {
+
     const form = mount(
         <Provider store={store}>
             <Form>

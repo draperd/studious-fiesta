@@ -55,7 +55,7 @@ function evaluateRule({ rule = { is: [], isNot: []}, targetValue } = {}) {
  * @param  {object[]} [input.rules=[]]           The rules to evaluate
  * @param  {object}   [input.fieldsById={}]      A map of the fields
  * @param  {boolean}  [input.defaultResult=true] The default result to apply when evaluation cannot take place
- * @return {boolean}                            Whether or not the rules evaluated successfully.
+ * @return {boolean}                             Whether or not the rules evaluated successfully.
  */
 function evaluateRules({ rules = [], fieldsById = {}, defaultResult = true } = {}) {
     let rulesPass = defaultResult;
@@ -79,6 +79,8 @@ function evaluateRules({ rules = [], fieldsById = {}, defaultResult = true } = {
 }
 
 /**
+ * Validates the supplied field. This function is non-mutating - a new object representing the field
+ * is created.
  * 
  * @function
  * @param  {object} field The field to be validated 
@@ -86,7 +88,7 @@ function evaluateRules({ rules = [], fieldsById = {}, defaultResult = true } = {
  */
 function validateField(field) {
     let isValid = true;
-    if (field.isRequired)
+    if (field.isRequired && field.isVisible)
     {
         const value = field.value;
         const valueIsEmptyArray = Array.isArray(value) && value.length === 0;
@@ -99,6 +101,8 @@ function validateField(field) {
 }
 
 /**
+ * Validates the fields provided.
+ * 
  * @function
  * @param {object}    input
  * @param {object[]}  input.fields The fields to validate
@@ -120,7 +124,7 @@ function validateFields(fields) {
 function processFields({ fields, fieldsById }) {
     const updatedFields = fields.map(field => {
         return Object.assign({}, field, {
-            visible: evaluateRules({ rules: field.visibleWhen, fieldsById, defaultResult: true }),
+            isVisible: evaluateRules({ rules: field.visibleWhen, fieldsById, defaultResult: field.isVisible !== false }),
             isRequired: evaluateRules({ rules: field.requiredWhen, fieldsById, defaultResult: !!field.isRequired })
         });
     })
@@ -128,6 +132,8 @@ function processFields({ fields, fieldsById }) {
 }
 
 /**
+ * Builds a map of the supplied fields using the id of each field as the key in the map.
+ * 
  * @function
  * @param {object[]} fields The fields to map
  */
@@ -139,6 +145,8 @@ function mapFieldsById({ fields = [] } = {}) {
 }
 
 /**
+ * Creates a new state with a new form registered (if a form with the requested id has not already previously
+ * been registered).
  * 
  * @function
  * @param {object}  state  The current state to derive the new state from
@@ -153,6 +161,135 @@ function registerForm(state, action) {
     return Object.assign({}, state, {
         [action.formId]: form
     });
+}
+
+/**
+ * Attempts to convert a string into an array using a delimiter. If no delimiter is provided then the original string is provided.
+ * If a string is not provided but a delimiter is, then an empty array will be returned.
+ * 
+ * @function
+ * @param {object}    input
+ * @param {any}       input.value            The string to be split
+ * @param {string}    [input.valueDelimiter] An optional delimitter for converting string values into arrays of strings
+ * @return {string[]} An array of strings
+ */
+function splitDelimitedValue({ value, valueDelimiter } = {}) {
+    if (valueDelimiter)
+    {
+        if (typeof value === "string")
+        {
+            value = value.split(valueDelimiter);
+        }
+        else
+        {
+            value = [];
+        }
+    }
+    return value;
+}
+
+/**
+ * Attempts to convert an array into a string using a delimiter. If no delimiter is provided then the original array 
+ * value is returned.
+ * 
+ * @function
+ * @param {object}   input
+ * @param {string[]} input.value            The array to be joined
+ * @param {string}   [input.valueDelimiter] An optional delimitter for converting string arrays into a string
+ * @return {string}                        A string created by joining the array using the supplied delimitted value
+ */
+function joinDelimitedValue({ value, valueDelimiter }) {
+    if (Array.isArray(value) && valueDelimiter)
+    {
+        value = value.join(valueDelimiter);
+    }
+    return value;
+}
+
+/**
+ * Builds an array of all the items that are not in the missingFrom array but are found in the foundIn array.
+ * 
+ * @function
+ * @param {object}   input
+ * @param {object[]} input.missingFrom The array to find missing items in
+ * @param {object[]} input.foundIn     The array to get the items from that aren't in the source
+ * @return {object[]}                  An array of all the items that are in target that aren't in source
+ */
+function getMissingItems({ missingFrom, foundIn }) {
+    return foundIn.reduce((missingItems, item) => {
+        !missingFrom.includes(item) && missingItems.push(item);
+        return missingItems;
+    }, []);
+} 
+
+/**
+ * Determines the values that have been added and removed from the initial value of the supplied field. Works with array data or
+ * string data (where a delimiter is provided to convert the string into an array)
+ * 
+ * @function
+ * @param {object}     input
+ * @param {string}     input.name                       The name of value represented by the field
+ * @param {any}        input.value                      The current value of the field
+ * @param {any}        input.initialValue               The initial value of the field (to be compared against the current value)
+ * @param {string}     [input.valueDelimiter]           An optional delimiter for converting string values into arrays and back again
+ * @param {string}     [input.addedSuffix="_added"]     A suffix to apply to the name to define a new attribute representing the additive changes
+ * @param {string}     [input.removedSuffix="_removed"] A suffix to apply to the name to define a new attribute representing the reductive changes
+ * @returns {object[]}                                  An array of the output values (the added and removed changes)
+ */
+function determineChangedValues({ name, initialValue, value, valueDelimiter, addedSuffix = "_added", removedSuffix = "_removed" }) {
+    const outputValues = [];
+    if (!Array.isArray(value))
+    {
+        console.warn("Cannot report added and removed items from a value that is not an array", value);
+    }
+    else
+    {
+        initialValue = splitDelimitedValue({ value: initialValue, valueDelimiter });
+        
+        let added = getMissingItems({ foundIn: value, missingFrom: initialValue })
+        let removed = getMissingItems({ foundIn: initialValue, missingFrom: value})
+        
+        added = joinDelimitedValue({value: added, valueDelimiter});
+        removed = joinDelimitedValue({value: removed, valueDelimiter});
+
+        outputValues.push({
+            name: name + addedSuffix,
+            value: added
+        },{
+            name: name + removedSuffix,
+            value: removed
+        });
+    } 
+    return outputValues; 
+}
+
+/**
+ * Generates the value of a form based on the data in the supplied fields. Not all fields will necessarily
+ * provide a value, some fields may in fact provide more than one value. 
+ * 
+ * @function
+ * @param {object}   input
+ * @param {object[]} input.fields The fields to generate the value from
+ */
+function generateFormValue({ fields = [] } = {}) {
+    return fields.reduce((formValue, field) => {
+        if (field.name)
+        {
+            if (field.useChangesAsValues)
+            {
+                determineChangedValues(field).forEach(({name, value}) => formValue[name] = value)
+            }
+            else
+            {
+                formValue[field.name] = field.value;
+            }
+        }
+        else
+        {
+            console.warn("Cannot set a value because no 'name' attribute is present on the field", field);
+        }
+        return formValue;
+    }, {});
 }
 
 
@@ -172,12 +309,17 @@ function registerField(state, action) {
         form = get(state, `${action.formId}`);
     }
 
-    let fields = [...form.fields, Object.assign({}, action.field)];
+    const fieldToRegister = Object.assign({}, action.field, {
+        initialValue: action.field.value
+    });
+    let fields = [...form.fields, fieldToRegister];
     let fieldsById = mapFieldsById({ fields });
     fields = processFields({fields, fieldsById});
     
     fields = validateFields(fields);
     const isValid = fields.every(field => field.isValid);
+
+    const value = generateFormValue({fields});
 
     fieldsById = mapFieldsById({fields}); // NOTE: Need to remap fields because processFields is non-mutating
 
@@ -185,12 +327,17 @@ function registerField(state, action) {
         [action.formId]: Object.assign({}, form, {
             fields,
             fieldsById,
-            isValid
+            isValid,
+            value
         })
     });
 }
 
 /**
+ * Creates a new state containing the new value of the field that has been updated. Any resulting effects of
+ * changing the value (such as changes in visibility, requirement, disablement and validity) will also be
+ * reflected in the new state.
+ * 
  * @function
  * @param {object}  state  The current state to derive the new state from
  * @param {object}  action The action to apply to the state
@@ -205,16 +352,28 @@ function updateFieldValue(state, action) {
 
     fieldsById = mapFieldsById({fields});
     fields = processFields({fields, fieldsById});
+
+    fields = validateFields(fields);
+    const isValid = fields.every(field => field.isValid);
+    const value = generateFormValue({fields});
+
     fieldsById = mapFieldsById({fields});
     
     return Object.assign({}, state, {
-        [action.formId]: Object.assign({}, form, { fields, fieldsById })
+        [action.formId]: Object.assign({}, form, { 
+            fields, 
+            fieldsById,
+            isValid,
+            value
+        })
     });
 }
 
 export { 
+    determineChangedValues,
     evaluateRule,
     evaluateRules,
+    getMissingItems,
     mapFieldsById, 
     processFields, 
     validateField,

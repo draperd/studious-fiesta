@@ -16,6 +16,15 @@ import combinedReducers from "../../../../src/reducers/combined";
 
 const store = createStore(combinedReducers);
 
+let mockWarn;
+beforeEach(() => {
+    mockWarn = console.warn = jest.fn(() => {});
+});
+
+afterEach(() => {
+    mockWarn.mockClear();
+});
+
 test("visibility should change on value", () => {
     const wrapper = mount(
         <Provider store={store}>

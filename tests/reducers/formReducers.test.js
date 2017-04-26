@@ -4,13 +4,23 @@ import { actionNames,
          registerField,
          updateFieldValue } from "../../src/actions/formActions";
 import formReducers, {
+    determineChangedValues,
     evaluateRules,
     evaluateRule,
+    getMissingItems,
     mapFieldsById,
     validateField,
     valuesMatch
 } from "../../src/reducers/formReducers";
 
+let mockWarn;
+beforeEach(() => {
+    mockWarn = console.warn = jest.fn(() => {});
+});
+
+afterEach(() => {
+    mockWarn.mockClear();
+});
 
 test("registering a form", () => {
     const initialState = {};
@@ -37,24 +47,29 @@ test("registering a field with a form", () => {
         form1: {
             fields: [{
                 fieldId: "FIELD1",
-                visible: true,
+                isVisible: true,
                 isRequired: false,
-                isValid: true
+                isValid: true,
+                value: "test",
+                initialValue: "test" 
             }],
             fieldsById: {
                 "FIELD1": {
                     fieldId: "FIELD1",
-                    visible: true,
+                    isVisible: true,
                     isRequired: false,
-                    isValid: true
+                    isValid: true,
+                    value: "test",
+                    initialValue: "test" 
                 }
             },
-            isValid: true
+            isValid: true,
+            value: {}
         }
     };
     deepFreeze(initialState);
 
-    let resultState = formReducers(initialState, registerField({formId: "form1", field: { fieldId: "FIELD1" }}));
+    let resultState = formReducers(initialState, registerField({formId: "form1", field: { value: "test", fieldId: "FIELD1" }}));
     expect(resultState).toEqual(expectedState);
 })
 
@@ -139,7 +154,7 @@ test("changing a field value", () => {
     expect(resultState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
         fieldId: "FIELD1",
         value: "test",
-        visible: true
+        isVisible: true
     }));
 })
 
@@ -169,7 +184,7 @@ test("visibility changes on registered field", () => {
     expect(resultState).toHaveProperty("form1.fieldsById.FIELD2");
     expect(resultState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
         fieldId: "FIELD1",
-        visible: false
+        isVisible: false
     }));
 })
 
@@ -196,30 +211,30 @@ test("visibility changes on field value change", () => {
     }));
     expect(initialState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
         fieldId: "FIELD1",
-        visible: true
+        isVisible: true
     }));
     deepFreeze(initialState);
 
     let resultState = formReducers(initialState, updateFieldValue({evt: { target: { value: false } }, formId: "form1", fieldId: "FIELD2"}));
     expect(resultState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
         fieldId: "FIELD1",
-        visible: false
+        isVisible: false
     }));
     resultState = formReducers(resultState, updateFieldValue({evt: { target: { value: true } }, formId: "form1", fieldId: "FIELD2"}));
     expect(resultState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
         fieldId: "FIELD1",
-        visible: true
+        isVisible: true
     }));
 })
 
 test("validating a field", () => {
-    expect(validateField({ isRequired: false})).toEqual(expect.objectContaining({isValid: true}));
-    expect(validateField({ isRequired: true})).toEqual(expect.objectContaining({isValid: false}));
-    expect(validateField({ isRequired: true, value: 0})).toEqual(expect.objectContaining({isValid: true}));
-    expect(validateField({ isRequired: true, value: false})).toEqual(expect.objectContaining({isValid: true}));
-    expect(validateField({ isRequired: true, value: "test"})).toEqual(expect.objectContaining({isValid: true}));
-    expect(validateField({ isRequired: true, value: []})).toEqual(expect.objectContaining({isValid: false}));
-    expect(validateField({ isRequired: true, value: [1]})).toEqual(expect.objectContaining({isValid: true}));
+    expect(validateField({ isVisible: true, isRequired: false})).toEqual(expect.objectContaining({isValid: true}));
+    expect(validateField({ isVisible: true, isRequired: true})).toEqual(expect.objectContaining({isValid: false}));
+    expect(validateField({ isVisible: true, isRequired: true, value: 0})).toEqual(expect.objectContaining({isValid: true}));
+    expect(validateField({ isVisible: true, isRequired: true, value: false})).toEqual(expect.objectContaining({isValid: true}));
+    expect(validateField({ isVisible: true, isRequired: true, value: "test"})).toEqual(expect.objectContaining({isValid: true}));
+    expect(validateField({ isVisible: true, isRequired: true, value: []})).toEqual(expect.objectContaining({isValid: false}));
+    expect(validateField({ isVisible: true, isRequired: true, value: [1]})).toEqual(expect.objectContaining({isValid: true}));
 })
 
 test("required field with no value results in invalid form", () => {
@@ -246,3 +261,107 @@ test("optional field with no value results in valid form", () => {
     expect(initialState).toHaveProperty("form1.isValid", true);
 })
 
+test("required field with no initial value becomes valid when value is set", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            isRequired: true
+        }
+    }));
+    expect(state).toHaveProperty("form1.isValid", false);
+    state = formReducers(state, updateFieldValue({evt: { target: { value: 3 } }, formId: "form1", fieldId: "FIELD1"}));
+    expect(state).toHaveProperty("form1.isValid", true);
+})
+
+test("hidden fields are not validated by default", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1",
+            isVisible: false, 
+            isRequired: true
+        }
+    }));
+    expect(state).toHaveProperty("form1.isValid", true);
+})
+
+test("form value is set", () => {
+    let initialState = formReducers({}, registerForm({formId: "form1"}));
+    initialState = formReducers(initialState, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "one",
+            value: 1
+        }
+    }));
+    initialState = formReducers(initialState, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD2", 
+            name: "two",
+            value: 2
+        }
+    }));
+    expect(initialState).toHaveProperty("form1.value", { one: 1, two: 2});
+})
+
+test("form value is updated", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "one",
+            value: 1
+        }
+    }));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD2", 
+            name: "two",
+            value: 2
+        }
+    }));
+    state = formReducers(state, updateFieldValue({evt: { target: { value: 3 } }, formId: "form1", fieldId: "FIELD2"}));
+    expect(state).toHaveProperty("form1.value", { one: 1, two: 3});
+})
+
+test("finding missing items", () => {
+    expect(getMissingItems({ missingFrom: [1,2,4,6,8], foundIn: [1,2,3,4,5,6,7,8,9]})).toEqual([3,5,7,9]);
+})
+
+test("form value has added an removed values (arrays)", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "numbers",
+            value: [1,2,5],
+            useChangesAsValues: true
+        }
+    }));
+    state = formReducers(state, updateFieldValue({evt: { target: { value: [2,3,4] } }, formId: "form1", fieldId: "FIELD1"}));
+    expect(state).toHaveProperty("form1.value", { numbers_added: [3,4], numbers_removed: [1,5]});
+})
+
+test("form value has added an removed values (strings)", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "numbers",
+            value: "1,2,3",
+            useChangesAsValues: true,
+            valueDelimiter: ","
+        }
+    }));
+    state = formReducers(state, updateFieldValue({evt: { target: { value: ["2","4","5"] } }, formId: "form1", fieldId: "FIELD1"}));
+    expect(state).toHaveProperty("form1.value", { numbers_added: "4,5", numbers_removed: "1,3"});
+})
