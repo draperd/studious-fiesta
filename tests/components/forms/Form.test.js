@@ -5,6 +5,7 @@ import { Provider } from "react-redux";
 import { createStore } from "redux";
 
 import Form from "../../../src/components/forms/Form";
+import SubmitFormButton from "../../../src/components/forms/SubmitFormButton";
 import { default as FieldWrapper } from "../../../src/components/forms/fields/wrappers/Basic";
 import TextBox from "../../../src/components/forms/fields/TextBox"; 
 
@@ -25,10 +26,11 @@ test("form should pass id to field", () => {
 
     const form = mount(
         <Provider store={store}>
-            <Form>
+            <Form formId="FORM1">
                 <FieldWrapper>
                     <TextBox fieldId="FIELD1"></TextBox>
                 </FieldWrapper>
+                <SubmitFormButton label="Submit Form" />
             </Form>
         </Provider>
     );

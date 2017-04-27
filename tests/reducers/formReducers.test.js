@@ -2,7 +2,8 @@ import deepFreeze from "deep-freeze";
 import { actionNames,
          registerForm,
          registerField,
-         updateFieldValue } from "../../src/actions/formActions";
+         updateFieldValue,
+         unregisterForm } from "../../src/actions/formActions";
 import formReducers, {
     determineChangedValues,
     evaluateRules,
@@ -10,6 +11,7 @@ import formReducers, {
     getMissingItems,
     mapFieldsById,
     validateField,
+    validators,
     valuesMatch
 } from "../../src/reducers/formReducers";
 
@@ -36,6 +38,14 @@ test("registering a form", () => {
     expect(resultState).toEqual(expectedState);
 })
 
+test("unregistering a form", () => {
+    let state = {};
+    state = formReducers(state, registerForm({formId: "form1"}));
+    deepFreeze(state);
+    const resultState = formReducers(state, unregisterForm({formId: "form1"}));
+    expect(resultState).toEqual({});
+})
+
 test("registering a field with a form", () => {
     const initialState = {
         form1: {
@@ -47,20 +57,24 @@ test("registering a field with a form", () => {
         form1: {
             fields: [{
                 fieldId: "FIELD1",
+                isDisabled: false,
                 isVisible: true,
                 isRequired: false,
                 isValid: true,
                 value: "test",
-                initialValue: "test" 
+                initialValue: "test",
+                errorMessages: "" 
             }],
             fieldsById: {
                 "FIELD1": {
                     fieldId: "FIELD1",
+                    isDisabled: false,
                     isVisible: true,
                     isRequired: false,
                     isValid: true,
                     value: "test",
-                    initialValue: "test" 
+                    initialValue: "test",
+                    errorMessages: ""
                 }
             },
             isValid: true,
@@ -227,6 +241,55 @@ test("visibility changes on field value change", () => {
     }));
 })
 
+test("requirement can be set when registering a field", () => {
+    let initialState = formReducers({}, registerForm({formId: "form1"}));
+    initialState = formReducers(initialState, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            isRequired: true
+        }
+    }));
+    expect(initialState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
+        fieldId: "FIELD1",
+        isRequired: true
+    }));
+})
+
+test("requirement changes on registered field", () => {
+    let initialState = formReducers({}, registerForm({formId: "form1"}));
+    initialState = formReducers(initialState, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            requiredWhen: [
+                {
+                    fieldId: "FIELD2",
+                    is: ["required"]
+                }
+            ]
+        }
+    }));
+    expect(initialState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
+        fieldId: "FIELD1",
+        isRequired: false
+    }));
+    deepFreeze(initialState);
+
+    let resultState = formReducers(initialState, registerField({
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD2", 
+            value: "required"
+        }
+    }));
+    expect(resultState).toHaveProperty("form1.fieldsById.FIELD2");
+    expect(resultState).toHaveProperty("form1.fieldsById.FIELD1", expect.objectContaining({
+        fieldId: "FIELD1",
+        isRequired: true
+    }));
+})
+
 test("validating a field", () => {
     expect(validateField({ isVisible: true, isRequired: false})).toEqual(expect.objectContaining({isValid: true}));
     expect(validateField({ isVisible: true, isRequired: true})).toEqual(expect.objectContaining({isValid: false}));
@@ -286,6 +349,35 @@ test("hidden fields are not validated by default", () => {
         }
     }));
     expect(state).toHaveProperty("form1.isValid", true);
+})
+
+test("validation rules are passed for validation", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1",
+            value: "",
+            validWhen: {
+                lengthIsGreaterThan: {
+                    length: 1
+                }
+            }
+        }
+    }));
+    expect(state).toHaveProperty("form1.isValid", false);
+})
+
+test("warn when a validator does not exist", () => {
+    validateField({ validWhen: { fakeValidator: {} }});
+    expect(mockWarn).toHaveBeenCalledTimes(1);
+})
+
+test("lengthIsGreaterThan validator", () => {
+    expect(validators.lengthIsGreaterThan({ value: "test" })).toEqual(undefined);
+    expect(validators.lengthIsGreaterThan({ value: "test", length: 3 })).toEqual(undefined);
+    expect(validators.lengthIsGreaterThan({ value: "test", length: 5 })).toEqual("Should have more than 5 characters");
+    expect(validators.lengthIsGreaterThan({ value: "test", length: 5, message: "Too short" })).toEqual("Too short");
 })
 
 test("form value is set", () => {

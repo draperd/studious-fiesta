@@ -79,25 +79,79 @@ function evaluateRules({ rules = [], fieldsById = {}, defaultResult = true } = {
 }
 
 /**
+ * @static
+ * @type {object}
+ * @property {function} lengthIsGreaterThan 
+ */
+const validators = {
+
+    /**
+     * @function
+     * @param {object} input
+     * @param {string} input.value       The string to check the length of
+     * @param {number} input.length      The number of characters that the string should have more than
+     * @param {string} [input.message]   An optional message to return when validation fails
+     * @return {string}                  An error message (indicating that validation failed) or undefined when validation passes
+     */
+    lengthIsGreaterThan: function({ value, length, message }) {
+        if (isNaN(length) || (value || "").length > length)
+        {
+            return;
+        }
+        else
+        {
+
+            return message || `Should have more than ${length} characters`;
+        }
+    }
+}
+
+/**
  * Validates the supplied field. This function is non-mutating - a new object representing the field
  * is created.
  * 
  * @function
- * @param  {object} field The field to be validated 
- * @return {object}       The validated field
+ * @param  {object}   input                 The field to be validated 
+ * @param  {boolean}  input.isRequired      Whether or not the field requires a value
+ * @param  {boolean}  input.isVisible       Whether or not the field is currently visible (hidden fields will not be validation by default)
+ * @param  {any}      input.value           The value of the field to be validated
+ * @param  {object[]} [input.validWhen={}   An array of the rules to use to determine the validity of the field
+ * @return {object}                         The validated field
  */
-function validateField(field) {
+function validateField({ fieldId, isRequired = false, isVisible = true, value, validWhen = {} }) {
     let isValid = true;
-    if (field.isRequired && field.isVisible)
+    let errorMessages = [];
+    if (isVisible)
     {
-        const value = field.value;
-        const valueIsEmptyArray = Array.isArray(value) && value.length === 0;
-        isValid = (value || value === 0 || value === false) && !valueIsEmptyArray;
+        if (isRequired)
+        {
+            const valueIsEmptyArray = Array.isArray(value) && value.length === 0;
+            isValid = (value || value === 0 || value === false) && !valueIsEmptyArray;
+        }
+        
+        isValid = Object.keys(validWhen).reduce((allValidatorsPass, validator) => {
+            if (typeof validators[validator] === "function")
+            {
+                let validationConfig = validWhen[validator];
+                validationConfig.value = value;
+                let message = validators[validator](validationConfig);
+                if (message)
+                {
+                    allValidatorsPass = false;
+                    errorMessages.push(message);
+                }
+            }
+            else
+            {
+                console.warn("The requested validator does not exist", validator);
+            }
+            return allValidatorsPass;
+        }, isValid) && isValid;
     }
-    field = Object.assign({}, field, {
-        isValid
+    return Object.assign({}, arguments[0], {
+        isValid,
+        errorMessages: errorMessages.join(", ")
     });
-    return field;
 }
 
 /**
@@ -125,7 +179,8 @@ function processFields({ fields, fieldsById }) {
     const updatedFields = fields.map(field => {
         return Object.assign({}, field, {
             isVisible: evaluateRules({ rules: field.visibleWhen, fieldsById, defaultResult: field.isVisible !== false }),
-            isRequired: evaluateRules({ rules: field.requiredWhen, fieldsById, defaultResult: !!field.isRequired })
+            isRequired: evaluateRules({ rules: field.requiredWhen, fieldsById, defaultResult: !!field.isRequired }),
+            isDisabled: evaluateRules({ rules: field.disabledWhen, fieldsById, defaultResult: !!field.isDisabled })
         });
     })
     return updatedFields;
@@ -161,6 +216,20 @@ function registerForm(state, action) {
     return Object.assign({}, state, {
         [action.formId]: form
     });
+}
+
+/**
+ * Creates a new state with the requested form removed.
+ * 
+ * @function
+ * @param {object}  state  The current state to derive the new state from
+ * @param {object}  action The action to apply to the state
+ * @return {object}        The new state 
+ */
+function unregisterForm(state, action) {
+    state = Object.assign({}, state);
+    delete state[action.formId];
+    return state;
 }
 
 /**
@@ -377,6 +446,7 @@ export {
     mapFieldsById, 
     processFields, 
     validateField,
+    validators,
     valuesMatch 
 };
 
@@ -392,6 +462,9 @@ const formFields = (state = {}, action) => {
 
     case actionNames.UPDATE_FIELD_VALUE: 
         return updateFieldValue(state, action);
+
+    case actionNames.UNREGISTER_FORM: 
+        return unregisterForm(state, action);
 
     default:
       return state

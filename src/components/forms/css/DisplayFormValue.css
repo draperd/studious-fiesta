@@ -1,0 +1,12 @@
+table.components_forms_DisplayFormValue {
+    margin: 10px;
+}
+
+table.components_forms_DisplayFormValue,
+table.components_forms_DisplayFormValue tr,
+table.components_forms_DisplayFormValue tr td,
+table.components_forms_DisplayFormValue tr th {
+    border: 1px solid lightgray;
+    border-collapse: collapse;
+    padding: 5px;
+}

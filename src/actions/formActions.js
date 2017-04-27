@@ -13,7 +13,9 @@
 const actionNames = {
     REGISTER_FORM: "REGISTER_FORM",
     REGISTER_FIELD: "REGISTER_FORM_FIELD",
+    UNREGISTER_FORM: "UNREGISTER_FORM",
     UPDATE_FIELD_VALUE: "UPDATE_FORM_FIELD_VALUE"
+    
 }
 export { actionNames }
 
@@ -51,4 +53,16 @@ export const updateFieldValue = ({ evt, formId, fieldId }) => ({
     evt,
     formId,
     fieldId
+})
+
+/**
+ * Use to register remove a form from the Redux store
+ * 
+ * @function
+ * @param {object} props
+ * @param {string} props.id The id of the form
+ */
+export const unregisterForm = ({ formId }) => ({
+    type: actionNames.UNREGISTER_FORM,
+    formId
 })
