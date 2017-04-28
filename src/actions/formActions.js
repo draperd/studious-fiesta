@@ -48,11 +48,12 @@ export const registerField = ({ formId, field }) => ({
  * @function
  * @param {object} fieldProps 
  */
-export const updateFieldValue = ({ evt, formId, fieldId }) => ({
+export const updateFieldValue = ({ evt, formId, fieldId, value }) => ({
     type: actionNames.UPDATE_FIELD_VALUE,
     evt,
     formId,
-    fieldId
+    fieldId,
+    value
 })
 
 /**

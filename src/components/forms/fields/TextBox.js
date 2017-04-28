@@ -2,18 +2,13 @@
  * @module
  */
 import React from "react";
+import BaseField from "./BaseField";
 import connectField from "../connectField";
 
-class TextBox extends React.Component {
-
-    /**
-     * Registers the field.
-     * 
-     * @instance
-     */
-    componentDidMount() {
-        this.props.registerField(this.props);
-    }
+/**
+ * @class
+ */
+class TextBox extends BaseField {
 
     /**
      * @instance
@@ -24,7 +19,7 @@ class TextBox extends React.Component {
             <input type="text"
                    style={ { display: (this.props.isVisible ? "inline-block" : "none") } }
                    aria-describedby={this.props["aria-describedby"]}
-                   onChange={(evt) => this.props.onChange({ evt })}
+                   onChange={(evt) => this.props.onChange({ evt, fieldId: this.fieldId })}
                    disabled={this.props.isDisabled}
                    defaultValue={this.props.value}></input>
         );

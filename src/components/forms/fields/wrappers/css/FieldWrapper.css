@@ -1,0 +1,27 @@
+.components_forms_fields_wrappers_FieldWrapper {
+    opacity: 1;
+    margin-bottom: 10px;
+}
+
+.components_forms_fields_wrappers_FieldWrapper__label {
+    display: block;
+}
+
+.components_forms_fields_wrappers_FieldWrapper__description {
+    font-size: small;
+    color: darkgray;
+}
+
+.components_forms_fields_wrappers_FieldWrapper--disabled {
+    opacity: 0.3;
+}
+
+.components_forms_fields_wrappers_FieldWrapper--required > .components_forms_fields_wrappers_FieldWrapper__label:after {
+    content: " *"
+}
+
+.components_forms_fields_wrappers_FieldWrapper__errors {
+    color: red;
+    display: inline-block;
+    margin-left: 10px;
+}

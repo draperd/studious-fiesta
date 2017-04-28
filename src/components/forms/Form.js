@@ -45,7 +45,10 @@ class Form extends React.Component {
      * @returns {JSX}
      */
     render() {
-        const props = determineProperties({ props: this.props, names: ["formId"] });
+        let props = Object.assign({}, this.props, {
+            formId: this.formId
+        });
+        props = determineProperties({ props, names: ["formId"] });
         const childrenWithProps = cascadeProperties(this.props.children, props);
         return (
             <form ref={(node) => {this.componentNode = node}}>

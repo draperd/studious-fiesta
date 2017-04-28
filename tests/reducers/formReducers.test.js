@@ -457,3 +457,100 @@ test("form value has added an removed values (strings)", () => {
     state = formReducers(state, updateFieldValue({evt: { target: { value: ["2","4","5"] } }, formId: "form1", fieldId: "FIELD1"}));
     expect(state).toHaveProperty("form1.value", { numbers_added: "4,5", numbers_removed: "1,3"});
 })
+
+test("string options are converted to objects", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "OPTIONS_FIELD", 
+            name: "hasOptions",
+            options: ["one","two","three"]
+        }
+    }));
+
+    expect(state).toHaveProperty("form1.fieldsById.OPTIONS_FIELD", expect.objectContaining({
+        options: [{ label: "one", value: "one"},
+                  { label: "two", value: "two"},
+                  { label: "three", value: "three"}]
+    }));
+})
+
+test("object options use value as label (when label missing)", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "OPTIONS_FIELD", 
+            name: "hasOptions",
+            options: [{ value: "one"},{ value: "two"},{ value: "three"}]
+        }
+    }));
+
+    expect(state).toHaveProperty("form1.fieldsById.OPTIONS_FIELD", expect.objectContaining({
+        options: [{ label: "one", value: "one"},
+                  { label: "two", value: "two"},
+                  { label: "three", value: "three"}]
+    }));
+})
+
+test("object options use label as value (when value missing)", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "OPTIONS_FIELD", 
+            name: "hasOptions",
+            options: [{ value: "one"},{ value: "two"},{ value: "three"}]
+        }
+    }));
+
+    expect(state).toHaveProperty("form1.fieldsById.OPTIONS_FIELD", expect.objectContaining({
+        options: [{ label: "one", value: "one"},
+                  { label: "two", value: "two"},
+                  { label: "three", value: "three"}]
+    }));
+})
+
+test("omit on specificic value", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "optional",
+            value: "include",
+            omitWhenValueIs: ["omit"]
+        }
+    }));
+    expect(state).toHaveProperty("form1.value", { optional: "include" });
+    state = formReducers(state, updateFieldValue({formId: "form1", fieldId: "FIELD1", value:"omit"}));
+    expect(state).toHaveProperty("form1.value", {});
+})
+
+test("omit when hidden", () => {
+    let state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "optional",
+            value: "include",
+            isVisible: false,
+            omitWhenHidden: true
+        }
+    }));
+    expect(state).toHaveProperty("form1.value", {});
+
+    state = formReducers({}, registerForm({formId: "form1"}));
+    state = formReducers(state, registerField({ 
+        formId: "form1", 
+        field: {
+            fieldId: "FIELD1", 
+            name: "optional",
+            value: "include",
+            omitWhenHidden: true
+        }
+    }));
+    expect(state).toHaveProperty("form1.value", { optional: "include" });
+})

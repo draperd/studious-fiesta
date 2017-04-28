@@ -14,19 +14,55 @@ import TextBox from "../../../../src/components/forms/fields/TextBox";
 
 import combinedReducers from "../../../../src/reducers/combined";
 
-const store = createStore(combinedReducers);
+let mockWarn, store, wrapper;
 
-let mockWarn;
 beforeEach(() => {
     mockWarn = console.warn = jest.fn(() => {});
+    store = createStore(combinedReducers);
 });
 
 afterEach(() => {
     mockWarn.mockClear();
+    wrapper.unmount();
 });
 
+test("A fieldId should be generated if not provided", () => {
+    wrapper = mount(
+        <Provider store={store}>
+            <Form formId="FORM1">
+                <TextBox></TextBox>
+            </Form>
+        </Provider>
+    );
+
+    const state = store.getState();
+    expect(state).toHaveProperty("forms.FORM1.fieldsById");
+    expect(Object.keys(state.forms.FORM1.fieldsById)[0]).not.toEqual("undefined");
+})
+
+test("value can be updated with a generated fieldId", () => {
+    wrapper = mount(
+        <Provider store={store}>
+            <Form formId="FORM1">
+                <TextBox name="test"></TextBox>
+            </Form>
+        </Provider>
+    );
+
+    let state = store.getState();
+    expect(state.forms.FORM1.value).toEqual({});
+
+    const inputs = wrapper.find("input");
+    expect(inputs).toHaveLength(1);
+    inputs.node.value = "updated";
+    inputs.simulate("change", inputs.at(1));
+
+    state = store.getState();
+    expect(state.forms.FORM1.value).toEqual({ test: "updated" });
+})
+
 test("visibility should change on value", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
                 <TextBox fieldId="FIELD1"
@@ -52,3 +88,4 @@ test("visibility should change on value", () => {
     inputs.at(1).simulate("change", inputs.at(1));
     chaiExpect(inputs.first()).to.have.style("display", "none");
 })
+

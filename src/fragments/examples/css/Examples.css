@@ -1,0 +1,21 @@
+.example-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.example-column {
+    flex: 1;
+    text-align: top;
+    padding: 5px;
+}
+
+.example-column > p {
+    margin-top: 0;
+}
+
+.example-column.example-code {
+    flex: 2;
+    font-size: small;
+    white-space: pre-wrap;
+    font-family: monospace;
+}

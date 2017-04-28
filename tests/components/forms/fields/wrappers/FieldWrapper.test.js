@@ -12,35 +12,53 @@ chai.use(chaiEnzyme());
 import { mapValues } from "lodash";
 
 import Form from "../../../../../src/components/forms/Form";
-import Basic from "../../../../../src/components/forms/fields/wrappers/Basic"; 
-import { basicWrapperCssClasses as css } from "../../../../../src/components/forms/fields/wrappers/Basic"; 
+import FieldWrapper from "../../../../../src/components/forms/fields/wrappers/FieldWrapper"; 
+import { fieldWrapperCssClasses as css } from "../../../../../src/components/forms/fields/wrappers/FieldWrapper"; 
 import TextBox from "../../../../../src/components/forms/fields/TextBox"; 
 import combinedReducers from "../../../../../src/reducers/combined";
 
 const selectors = mapValues(css, (raw) => '.' + raw);
 
-const store = createStore(combinedReducers);
 
-let mockWarn;
+let mockWarn, store, wrapper;
 beforeEach(() => {
     mockWarn = console.warn = jest.fn(() => {});
+    store = createStore(combinedReducers);
 });
 
 afterEach(() => {
     mockWarn.mockClear();
+    wrapper.unmount();
 });
 
-test("visibility should change on value", () => {
-    const wrapper = mount(
+test("A fieldId should be generated if not provided", () => {
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper>
+                    <TextBox></TextBox>
+                </FieldWrapper>
+            </Form>
+        </Provider>
+    );
+
+    const state = store.getState();
+    expect(state).toHaveProperty("forms.FORM1.fieldsById");
+    expect(Object.keys(state.forms.FORM1.fieldsById)[0]).not.toEqual("undefined");
+})
+
+
+test("visibility should change on value", () => {
+    wrapper = mount(
+        <Provider store={store}>
+            <Form formId="FORM1">
+                <FieldWrapper fieldId="FIELD1"
                        visibleWhen={ [ { fieldId: "FIELD2", is: [ "show" ] }]}>
                     <TextBox ></TextBox>
-                </Basic>
-                <Basic fieldId="FIELD2">
+                </FieldWrapper>
+                <FieldWrapper fieldId="FIELD2">
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
@@ -61,59 +79,54 @@ test("visibility should change on value", () => {
     inputs.at(1).node.value = "shows";
     inputs.at(1).simulate("change", inputs.at(1));
     chaiExpect(wrappers.first()).to.have.style("display", "none");
-
-    wrapper.unmount();
 })
 
 test("label should be shown", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        label="This is a label">
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     chaiExpect(wrapper.find(selectors.label)).to.have.text("This is a label");
-    wrapper.unmount();
 })
 
 test("description should NOT be shown", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1">
+                <FieldWrapper fieldId="FIELD1">
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.description)).toHaveLength(0);
-    wrapper.unmount();
 })
 
 test("description should NOT be shown", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        description="This is a description">
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     chaiExpect(wrapper.find(selectors.description)).to.have.text("This is a description");
-    wrapper.unmount();
 })
 
 test("validation errors are displayed", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        validWhen={{
                            lengthIsGreaterThan: {
                                length: 4,
@@ -121,21 +134,20 @@ test("validation errors are displayed", () => {
                            }
                        }}>
                     <TextBox value="bob"></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     chaiExpect(wrapper.find(selectors.base)).to.have.style("display", "block");
     chaiExpect(wrapper.find(selectors.errors)).to.have.text("Error");
     expect(wrapper.find(selectors.invalid)).toHaveLength(1);
-    wrapper.unmount();
 })
 
 test("validation errors are NOT displayed", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        validWhen={{
                            lengthIsGreaterThan: {
                                length: 4,
@@ -143,91 +155,118 @@ test("validation errors are NOT displayed", () => {
                            }
                        }}>
                     <TextBox value="passes test"></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.errors)).toHaveLength(0);
-    wrapper.unmount();
 })
 
 test("required class name is applied (rule)", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="REQUIRED_WHEN_1"
+                <FieldWrapper fieldId="REQUIRED_WHEN_1"
                        requiredWhen={ [ { fieldId: "FIELD2", is: [ "required" ] }]}>
                     <TextBox></TextBox>
-                </Basic>
-                <Basic fieldId="FIELD2">
+                </FieldWrapper>
+                <FieldWrapper fieldId="FIELD2">
                     <TextBox value="required"></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.required)).toHaveLength(1);
-    wrapper.unmount();
 })
 
 test("required class name is applied (declaration)", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="REQUIRED_DECLARATION"
+                <FieldWrapper fieldId="REQUIRED_DECLARATION"
                        isRequired={true}>
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.required)).toHaveLength(1);
-    wrapper.unmount();
 })
 
 test("required class name is NOT applied", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        isRequired={false}>
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.required)).toHaveLength(0);
-    wrapper.unmount();
 })
 
 test("disabled class is applied (rule)", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        disabledWhen={ [ { fieldId: "FIELD2", is: [ "disable" ] }]}>
                     <TextBox></TextBox>
-                </Basic>
-                <Basic fieldId="FIELD2">
+                </FieldWrapper>
+                <FieldWrapper fieldId="FIELD2">
                     <TextBox value="disable"></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.disabled)).toHaveLength(1);
-    wrapper.unmount();
 })
 
 test("disabled class is applied (declaration)", () => {
-    const wrapper = mount(
+    wrapper = mount(
         <Provider store={store}>
             <Form formId="FORM1">
-                <Basic fieldId="FIELD1"
+                <FieldWrapper fieldId="FIELD1"
                        isDisabled={true}>
                     <TextBox></TextBox>
-                </Basic>
+                </FieldWrapper>
             </Form>
         </Provider>
     );
     expect(wrapper.find(selectors.disabled)).toHaveLength(1);
-    wrapper.unmount();
+})
+
+test("multiple fields assigning updating one attribute", () => {
+    wrapper = mount(
+        <Provider store={store}>
+            <Form formId="FORM1">
+                <FieldWrapper fieldId="FIELD1"
+                         name="data"
+                         value="initial"
+                         omitWhenValueIs={["custom"]}>
+                    <TextBox/>
+                </FieldWrapper>
+                <FieldWrapper fieldId="FIELD2"
+                         name="data"
+                         omitWhenHidden={true}
+                         value="test"
+                         visibleWhen={ [{ fieldId: "FIELD1", is: [ "custom" ]}] }>
+                    <TextBox/>
+                </FieldWrapper>
+            </Form>
+        </Provider>
+    );
+
+    const inputs = wrapper.find("input");
+    expect(inputs).toHaveLength(2);
+    chaiExpect(inputs.at(1)).to.have.style("display", "none");
+    expect(store.getState()).toHaveProperty("forms.FORM1.value", { data: "initial" });
+
+    inputs.at(0).node.value = "custom";
+    inputs.at(0).simulate("change", inputs.at(0));
+
+    chaiExpect(inputs.at(1)).to.have.style("display", "inline-block");
+    expect(store.getState()).toHaveProperty("forms.FORM1.value", { data: "test" });
 })

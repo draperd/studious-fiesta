@@ -15,6 +15,7 @@ function connectField(FieldComponent) {
         isRequired: PropTypes.bool.isRequired,
         isValid: PropTypes.bool.isRequired,
         isVisible: PropTypes.bool.isRequired,
+        options: PropTypes.array,
         onChange: PropTypes.func.isRequired,
         registerField: PropTypes.func.isRequired
     }
@@ -31,17 +32,24 @@ function connectField(FieldComponent) {
             isRequired: getAttribute({ state, ownProps, attribute: "isRequired", defaultValue: false }),
             isVisible: getAttribute({ state, ownProps, attribute: "isVisible", defaultValue: true }),
             isValid: getAttribute({ state, ownProps, attribute: "isValid", defaultValue: true }),
+            options: getAttribute({ state, ownProps, attribute: "options" }),
             value: getAttribute({ state, ownProps, attribute: "value" })
         }
     }
 
     const mapDispatchToProps = (dispatch, ownProps) => {
         return {
-            registerField: () => {
-                dispatch(registerField({ formId: ownProps.formId, field: ownProps }));
+            registerField: (fieldId) => {
+                const field = Object.assign({}, ownProps, {
+                    fieldId: fieldId
+                });
+                dispatch(registerField({ formId: ownProps.formId, field }));
             },
-            onChange: ({ evt }) => {
-                dispatch(updateFieldValue({ evt, formId: ownProps.formId, fieldId: ownProps.fieldId }))
+            onChange: ({ evt, fieldId, value }) => {
+                dispatch(updateFieldValue({ evt, 
+                                            formId: ownProps.formId, 
+                                            fieldId: ownProps.fieldId || fieldId,
+                                            value }))
             }
         }
     }

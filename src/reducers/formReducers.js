@@ -342,7 +342,12 @@ function determineChangedValues({ name, initialValue, value, valueDelimiter, add
  */
 function generateFormValue({ fields = [] } = {}) {
     return fields.reduce((formValue, field) => {
-        if (field.name)
+        if ((field.omitWhenHidden && !field.isVisible) || 
+            (field.omitWhenValueIs && field.omitWhenValueIs.some(value => field.value === value)))
+        {
+            return formValue;
+        }
+        else if (field.name)
         {
             if (field.useChangesAsValues)
             {
@@ -359,6 +364,35 @@ function generateFormValue({ fields = [] } = {}) {
         }
         return formValue;
     }, {});
+}
+
+/**
+ * @function
+ * @param {object}            input
+ * @param {object[]|string[]} input.options
+ * @return {object[]}
+ */
+function processOptions({ options } = {}) {
+    if (options)
+    {
+        options = options.map(option => {
+            if (typeof option === "string")
+            {
+                return {
+                    label: option,
+                    value: option
+                }
+            }
+            else
+            {
+                return {
+                    label: option.label || option.value,
+                    value: option.value || option.label
+                }
+            }
+        })
+    }
+    return options;
 }
 
 
@@ -379,7 +413,8 @@ function registerField(state, action) {
     }
 
     const fieldToRegister = Object.assign({}, action.field, {
-        initialValue: action.field.value
+        initialValue: action.field.value,
+        options: processOptions(action.field)
     });
     let fields = [...form.fields, fieldToRegister];
     let fieldsById = mapFieldsById({ fields });
@@ -416,7 +451,9 @@ function updateFieldValue(state, action) {
     const form = state[action.formId];
     let { fields, fieldsById } = form;
     const index = fields.findIndex( (field => { return field.fieldId === action.fieldId } ));
-    const field = Object.assign({}, fieldsById[action.fieldId], { value: action.evt.target.value });
+    
+    const updateValue = (typeof action.value !== "undefined" && action.value) || action.evt.target.value;
+    const field = Object.assign({}, fieldsById[action.fieldId], { value: updateValue });
     fields = [...fields.slice(0, index), field, ...fields.slice(index + 1)];
 
     fieldsById = mapFieldsById({fields});

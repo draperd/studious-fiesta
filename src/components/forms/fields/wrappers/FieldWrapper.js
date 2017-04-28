@@ -5,9 +5,9 @@ import React from "react";
 import { uniqueId } from "lodash";
 import connectField from "../../connectField";
 import { cascadeProperties, determineProperties } from "../../../../utilities/componentProcessing";
-import "./css/Basic.css";
+import "./css/FieldWrapper.css";
 
-const baseClass = "components_forms_fields_wrappers_Basic";
+const baseClass = "components_forms_fields_wrappers_FieldWrapper";
 
 /**
  * @static
@@ -31,12 +31,12 @@ const css = {
     label: `${baseClass}__label`,
     required: `${baseClass}--required`,
 };
-export { css as basicWrapperCssClasses};
+export { css as fieldWrapperCssClasses};
 
 /**
  * @class
  */
-class Basic extends React.Component {
+class FieldWrapper extends React.Component {
 
     /**
      * @constructor
@@ -46,6 +46,7 @@ class Basic extends React.Component {
         super(props);
 
         this.id = props.id || uniqueId("components_forms_fields_wrappers__");
+        this.fieldId = this.fieldId || props.fieldId || uniqueId(this.id + "__FIELD__");
         this.labelId = this.id + "__label";
         this.controlId = this.id + "__field";
     }
@@ -55,9 +56,25 @@ class Basic extends React.Component {
      * @returns {JSX}
      */
     render() {
-        const names = ["disabledWhen", "fieldId", "id", "isDisabled", "isRequired", "isVisible", "name", "requiredWhen", "validWhen", "visibleWhen", "aria-describedby"];
+        
+        const names = ["aria-describedby",
+                       "disabledWhen", 
+                       "fieldId", 
+                       "id", 
+                       "isDisabled", 
+                       "isRequired", 
+                       "isVisible",
+                       "omitWhenHidden",
+                       "omitWhenValueIs", 
+                       "options",
+                       "name", 
+                       "requiredWhen", 
+                       "validWhen", 
+                       "value", 
+                       "visibleWhen"];
         let props = Object.assign({}, this.props, {
             id: this.controlId,
+            fieldId: this.fieldId,
             "aria-describedby": this.labelId
         });
         props = determineProperties({ props, names });
@@ -86,4 +103,4 @@ class Basic extends React.Component {
     }
 }
 
-export default connectField(Basic);
+export default connectField(FieldWrapper);
