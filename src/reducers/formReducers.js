@@ -307,28 +307,21 @@ function getMissingItems({ missingFrom, foundIn }) {
  */
 function determineChangedValues({ name, initialValue, value, valueDelimiter, addedSuffix = "_added", removedSuffix = "_removed" }) {
     const outputValues = [];
-    if (!Array.isArray(value))
-    {
-        console.warn("Cannot report added and removed items from a value that is not an array", value);
-    }
-    else
-    {
-        initialValue = splitDelimitedValue({ value: initialValue, valueDelimiter });
-        
-        let added = getMissingItems({ foundIn: value, missingFrom: initialValue })
-        let removed = getMissingItems({ foundIn: initialValue, missingFrom: value})
-        
-        added = joinDelimitedValue({value: added, valueDelimiter});
-        removed = joinDelimitedValue({value: removed, valueDelimiter});
+    initialValue = splitDelimitedValue({ value: initialValue, valueDelimiter });
+    
+    let added = getMissingItems({ foundIn: value, missingFrom: initialValue })
+    let removed = getMissingItems({ foundIn: initialValue, missingFrom: value})
+    
+    added = joinDelimitedValue({value: added, valueDelimiter});
+    removed = joinDelimitedValue({value: removed, valueDelimiter});
 
-        outputValues.push({
-            name: name + addedSuffix,
-            value: added
-        },{
-            name: name + removedSuffix,
-            value: removed
-        });
-    } 
+    outputValues.push({
+        name: name + addedSuffix,
+        value: added
+    },{
+        name: name + removedSuffix,
+        value: removed
+    });
     return outputValues; 
 }
 
@@ -414,6 +407,7 @@ function registerField(state, action) {
 
     const fieldToRegister = Object.assign({}, action.field, {
         initialValue: action.field.value,
+        value: splitDelimitedValue(action.field),
         options: processOptions(action.field)
     });
     let fields = [...form.fields, fieldToRegister];

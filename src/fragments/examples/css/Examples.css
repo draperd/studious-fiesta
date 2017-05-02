@@ -17,5 +17,9 @@
     flex: 2;
     font-size: small;
     white-space: pre-wrap;
-    font-family: monospace;
+    font-family: "Inconsolata", monospace;
+}
+
+.example-column:first-child {
+    font-family: 'Raleway', sans-serif;
 }

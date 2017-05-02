@@ -57,7 +57,8 @@ class FieldWrapper extends React.Component {
      */
     render() {
         
-        const names = ["aria-describedby",
+        const names = ["addedSuffix",
+                       "aria-describedby",
                        "disabledWhen", 
                        "fieldId", 
                        "id", 
@@ -67,10 +68,13 @@ class FieldWrapper extends React.Component {
                        "omitWhenHidden",
                        "omitWhenValueIs", 
                        "options",
-                       "name", 
-                       "requiredWhen", 
+                       "name",
+                       "removedSuffix", 
+                       "requiredWhen",
+                       "useChangesAsValues",
                        "validWhen", 
-                       "value", 
+                       "value",
+                       "valueDelimiter", 
                        "visibleWhen"];
         let props = Object.assign({}, this.props, {
             id: this.controlId,
