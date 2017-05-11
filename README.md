@@ -7,3 +7,5 @@ The best way to see what features and components are available is to clone or do
 Run `npm install`
 Run `npm start`
 
+For test coverage run `npm test -- --coverage`
+
